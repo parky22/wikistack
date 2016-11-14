@@ -3,7 +3,8 @@ var express = require('express');
 var app = express();
 var morgan = require('morgan');
 var nunjucks = require('nunjucks');
-var routes = require('./routes');
+var routes = require('./routes/wiki.js');
+var models = require('./models');
 var fs = require('fs');
 var bodyParser = require('body-parser');
 
@@ -21,11 +22,20 @@ app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({ extended: true })); // for HTML form submits
 app.use(bodyParser.json()); // would be for AJAX requests
 
-
-// start the server
-var server = app.listen(1337, function(){
-  console.log('listening on port 1337');
-});
+// sync the tables
+models.User.sync()
+.then(function () {
+    return models.Page.sync({force: true})
+})
+.then(function () {
+    app.listen(3001, function () {
+        console.log('Server is listening on port 3001!');
+    });
+})
+.catch(console.error);
 
 // modular routing that uses io inside it
-app.use('/', routes);
+app.get('/',function(req, res, next){
+    res.send("Homepage");
+});
+app.use('/wiki', routes);

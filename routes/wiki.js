@@ -3,13 +3,64 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-// require any data model js files
+const models = require('../models');
+var Page = models.Page;
+var User = models.User;
 
-router.use(express.static(path.join(__dirname, '/public')));
+router.use(express.static(path.join(__dirname, '/pulic')));
 
+// retrieve all wiki pages
 router.get('/', function(req, res, next){
-   res.render('index', {title: 'Wikistack.js'});
+  res.redirect('/');
+   //res.render('index', {title: 'Wikistack.js'});
 });
+
+// retrieve the "add a page" form
+router.get('/add', function(req, res, next){
+   res.render('addpage.html');
+   //res.render('index', {title: 'Wikistack.js'});
+});
+
+// submit a new page to the database
+router.post('/', function(req, res, next){
+    //res.json(req.body);
+
+    var page = Page.build({
+    title: req.body.title,
+    //urlTitle: '/wiki/'+req.body.title,
+    content: req.body.content,
+    status: 'open'
+  });
+  console.log("title is *"+req.body.title+"*");
+  console.log("url title:", page.urlTitle);
+  // redirect to / after page save is complete
+  page.save()
+  .then (function(result) {
+    console.log("url title:(after save)", page.urlTitle);
+    //res.json(result);
+    res.redirect(result.route);
+  })
+  .catch (function(err){
+     console.log("url title:(after error)", page.urlTitle);
+    res.render('error.html',{message: err.message, error: err});
+  })
+});
+
+router.get('/:urlTitle', function(req, res, next){
+    //res.send(req.params.urlTitle);
+  Page.findOne({
+    where: {
+      urlTitle: req.params.urlTitle
+    }
+  })
+  .then(function(foundPage){
+   //res.json(foundPage);
+   res.render('wikipage.html', {page: foundPage});
+  })
+  .catch(next);
+});
+
+
 
 // examples from twitter-js solution
 // a reusable function
