@@ -11,8 +11,12 @@ router.use(express.static(path.join(__dirname, '/pulic')));
 
 // retrieve all wiki pages
 router.get('/', function(req, res, next){
-  res.redirect('/');
-   //res.render('index', {title: 'Wikistack.js'});
+  Page.findAll({})
+  .then(function(pages){
+    console.log('pages', pages.map(p => p.get({plain:true})));
+    res.render('index', {pages:pages});
+  })
+  .catch(next);
 });
 
 // retrieve the "add a page" form
@@ -26,24 +30,25 @@ router.post('/', function(req, res, next){
     //res.json(req.body);
 
     var page = Page.build({
-    title: req.body.title,
-    //urlTitle: '/wiki/'+req.body.title,
-    content: req.body.content,
-    status: 'open'
-  });
-  console.log("title is *"+req.body.title+"*");
-  console.log("url title:", page.urlTitle);
-  // redirect to / after page save is complete
-  page.save()
-  .then (function(result) {
-    console.log("url title:(after save)", page.urlTitle);
-    //res.json(result);
-    res.redirect(result.route);
-  })
-  .catch (function(err){
-     console.log("url title:(after error)", page.urlTitle);
-    res.render('error.html',{message: err.message, error: err});
-  })
+      title: req.body.title,
+      content: req.body.content,
+      status: 'open'
+    });
+
+    var user = User.build({
+      name: req.body.name,
+      email: req.body.email
+    })
+    // redirect to / after page save is complete
+    page.save()
+    .then(user.save())
+    .then (function(result) {
+      //res.json(result);
+      res.redirect(result.route);
+    })
+    .catch (function(err){
+      res.render('error.html',{message: err.message, error: err});
+    })
 });
 
 router.get('/:urlTitle', function(req, res, next){
